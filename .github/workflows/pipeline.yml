@@ -12,9 +12,9 @@ on:
         required: true
         default: 'Germany, Netherlands'
       dynamic_hs_code:
-        description: 'Sorgulanacak GTIP / HS Code'
-        required: true
-        default: '8481.80'
+        description: 'Sorgulanacak GTIP / HS Code (Bos Birakabilirsiniz)'
+        required: false
+        default: ''
       dynamic_product_desc:
         description: 'Konfimentoda Aranacak Urun Tanimi'
         required: true
@@ -67,8 +67,9 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
-        git add data_vault/
-        git commit -m "🤖 Raporlar Guncellendi" || exit 0
+        mkdir -p data_vault
+        git add data_vault/ || true
+        git commit -m "🤖 Raporlar Guncellendi [GTIP: ${{ github.event.inputs.dynamic_hs_code }}]" || exit 0
         git push
 
     - name: 5. Adim Arayuzu Canliya Al

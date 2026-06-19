@@ -1,20 +1,34 @@
 name: Export Intelligence Pipeline
 
 on:
-  schedule:
-    - cron: '0 0 * * 1' # Her Pazartesi gece yarısı otomatik çalışır
-  workflow_dispatch: # İsterseniz panelden tek tıkla manuel tetikleyebilirsiniz
+  workflow_dispatch:
+    inputs:
+      target_keywords:
+        description: 'Aranacak Sektör Kelimeleri (Örn: industrial pumps, flow control)'
+        required: true
+        default: 'industrial valves distributor'
+      target_regions:
+        description: 'Hedef Ülkeler / Şehirler'
+        required: true
+        default: 'Germany, Netherlands'
+      dynamic_hs_code:
+        description: 'Sorgulanacak GTİP / HS Code (Örn: 8481.80)'
+        required: true
+        default: '8481.80'
+      dynamic_product_desc:
+        description: 'Konşimentoda Aranacak Ürün Tanımı'
+        required: true
+        default: 'valves'
 
 jobs:
   run-intelligence:
     runs-on: ubuntu-latest
-
     steps:
     - name: Repo Kodlarını Çek
       uses: actions/checkout@v4
 
     - name: Python Ortamını Kur
-      uses: actions/checkout@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -23,18 +37,24 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Veri Toplama Motorunu Güvenli Çalıştır
+    - name: 1. Adım: Dinamik Coğrafi Keşif (Maps)
       env:
         GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-        TARGET_KEYWORDS: ${{ secrets.TARGET_KEYWORDS }}
-        TARGET_REGIONS: ${{ secrets.TARGET_REGIONS }}
-      run: |
-        python src/maps_engine.py
+        TARGET_KEYWORDS: ${{ github.event.inputs.target_keywords }}
+        TARGET_REGIONS: ${{ github.event.inputs.target_regions }}
+      run: python src/maps_engine.py
 
-    - name: Toplanan Verileri Güvenli Depoya Commit Et
+    - name: 2. Adım: Dinamik Gümrük ve Konşimento Doğrulama
+      env:
+        CUSTOMS_DATA_TOKEN: ${{ secrets.CUSTOMS_DATA_TOKEN }}
+        DYNAMIC_HS_CODE: ${{ github.event.inputs.dynamic_hs_code }}
+        DYNAMIC_PRODUCT_DESC: ${{ github.event.inputs.dynamic_product_desc }}
+      run: python src/customs_matcher.py
+
+    - name: Sonuçları Güvenli Depoya Commit Et
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
         git add data_vault/
-        git commit -m "🤖 Otomatik Sistem: Yeni Hedef Müşteri Verileri Eklendi [$(date +'%Y-%m-%d')]" || exit 0
+        git commit -m "🤖 Dinamik İstihbarat Raporu Güncellendi [GTİP: ${{ github.event.inputs.dynamic_hs_code }}]" || exit 0
         git push

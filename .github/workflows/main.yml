@@ -42,36 +42,36 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests pandas weasyprint
 
-    - name: '1. Adim: Dinamik Cografi Kesif'
+    - name: 1. Adim Dinamik Cografi Kesif
       env:
         GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         TARGET_KEYWORDS: ${{ github.event.inputs.target_keywords }}
         TARGET_REGIONS: ${{ github.event.inputs.target_regions }}
       run: python src/maps_engine.py
 
-    - name: '2. Adim: Dinamik Gumruk ve Konsimento Dogrulama'
+    - name: 2. Adim Dinamik Gumruk ve Konsimento Dogrulama
       env:
         CUSTOMS_DATA_TOKEN: ${{ secrets.CUSTOMS_DATA_TOKEN }}
         DYNAMIC_HS_CODE: ${{ github.event.inputs.dynamic_hs_code }}
         DYNAMIC_PRODUCT_DESC: ${{ github.event.inputs.dynamic_product_desc }}
       run: python src/customs_matcher.py
 
-    - name: '3. Adim: Raporlama ve Belge Uretimi'
+    - name: 3. Adim Raporlama ve Belge Uretimi
       env:
         TARGET_KEYWORDS: ${{ github.event.inputs.target_keywords }}
         DYNAMIC_HS_CODE: ${{ github.event.inputs.dynamic_hs_code }}
         DYNAMIC_PRODUCT_DESC: ${{ github.event.inputs.dynamic_product_desc }}
       run: python src/report_generator.py
 
-    - name: '4. Adim: Guncel Verileri Depola'
+    - name: 4. Adim Guncel Verileri Depola
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
         git add data_vault/
-        git commit -m "🤖 Raporlar Guncellendi [GTIP: ${{ github.event.inputs.dynamic_hs_code }}]" || exit 0
+        git commit -m "🤖 Raporlar Guncellendi" || exit 0
         git push
 
-    - name: '5. Adim: Arayuzu Canliya Al'
+    - name: 5. Adim Arayuzu Canliya Al
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         folder: data_vault
